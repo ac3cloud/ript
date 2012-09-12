@@ -1,0 +1,2 @@
+partition "foobar" do
+end

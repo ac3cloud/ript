@@ -1,0 +1,2 @@
+class LabelError < NameError
+end

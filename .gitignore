@@ -1,0 +1,6 @@
+tmp/
+pkg/
+*.swp
+*~
+vendor
+.bundle

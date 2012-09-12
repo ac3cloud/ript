@@ -1,0 +1,18 @@
+#!/bin/bash
+
+if [ "$(whoami)" != "root" ]; then
+  echo "You must be root to run this!"
+  exit 1
+fi
+
+if [ -d "$HOME/.rbenv" ]; then
+  export PATH="$HOME/.rbenv/bin:$PATH"
+fi
+if [ -d "/opt/rbenv" ]; then
+  export PATH="/opt/rbenv/bin:$PATH"
+  export RBENV_ROOT="/opt/rbenv"
+fi
+
+eval "$(rbenv init -)"
+
+$@
