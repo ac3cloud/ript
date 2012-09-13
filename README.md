@@ -343,6 +343,10 @@ Some notes on the DSL so far:
    For firewall configurations that are doing lots of public-to-private address
    translation, you're going to use `accepts` very rarely.
 
+ - Arguments to `ports` can be mixed (`ports 500..650, 80, 25, 9000..9500`),
+   but you must always specify port mappings last, e.g. `ports 25, 80 => 8080`
+   is valid, but `ports 80 => 8080, 25` is not.
+
 
 ### Rule types ###
 
