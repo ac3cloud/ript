@@ -271,6 +271,49 @@ partition "joeblogsco" do
 end
 ```
 
+You have a lot of flexibility when specifying ports, port ranges, and port mappings:
+
+``` ruby
+# partitions/joeblogsco.rb
+partition "joeblogsco" do
+  label "www.joeblogsco.com", :address => "172.19.56.216"
+  label "api.joeblogsco.com", :address => "172.19.56.217"
+  label "joeblogsco subnet",  :address => "192.168.5.224/27"
+  label "app-01",             :address => "192.168.5.230"
+  label "app-02",             :address => "192.168.5.231"
+  label "trusted office",     :address => "172.20.4.124"
+
+  rewrite "public mail" do
+    # Pass TCP port 25 + 993 through to app-01
+    ports 25, 993
+    dnat  "www.joeblogsco.com" => "app-01"
+  end
+
+  rewrite "trusted private services" do
+    # Pass TCP port 6000 to 8000 through to app-01 from the trusted office
+    from "trusted office"
+    ports 6000..8000
+    dnat  "www.joeblogsco.com" => "app-01"
+  end
+
+  rewrite "public website" do
+    # Map TCP port 80 traffic on the public IP to TCP port 8080 on app-01
+    ports 80 => 8080
+    dnat  "www.joeblogsco.com" => "app-01"
+  end
+
+  rewrite "api services" do
+    # Pass TCP port 80 through to app-02
+    # Pass TCP port 8000 to 8900 through to app-02
+    # Map TCP port 2222 traffic on the public IP to TCP port 22 on app-02
+    ports 80, 8000..8900, 2222 => 22
+    dnat  "api.joeblogsco.com" => "app-02"
+  end
+end
+```
+
+The above `ports` syntax works throughout all rule types.
+
 Some notes on the DSL so far:
 
  - A label's scope is restricted to the partition block it is defined in. This
