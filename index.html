@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <link href='https://fonts.googleapis.com/css?family=Chivo:900' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <title>Ript by bulletproofnetworks</title>
+  </head>
+
+  <body>
+    <div id="container">
+      <div class="inner">
+
+        <header>
+          <h1>Ript</h1>
+          <h2>Ript provides a clean Ruby DSL for describing firewall rules, and implements database migrations-like functionality for applying the rules</h2>
+        </header>
+
+        <section id="downloads" class="clearfix">
+          <a href="https://github.com/bulletproofnetworks/ript/zipball/master" id="download-zip" class="button"><span>Download .zip</span></a>
+          <a href="https://github.com/bulletproofnetworks/ript/tarball/master" id="download-tar-gz" class="button"><span>Download .tar.gz</span></a>
+          <a href="https://github.com/bulletproofnetworks/ript" id="view-on-github" class="button"><span>View on GitHub</span></a>
+        </section>
+
+        <hr>
+
+        <section id="main_content">
+          <h1>Ript</h1>
+
+<p>Ript provides a clean Ruby DSL for describing firewall rules, and implements
+database migrations-like functionality for applying the rules with zero downtime.</p>
+
+<p>Ript works with <code>iptables</code> on Linux, and is written in Ruby.</p>
+
+<h2>Installing</h2>
+
+<p>Make sure you have Ruby 1.9.2 installed, and run:</p>
+
+<div class="highlight"><pre>gem install ript
+</pre></div>
+
+<p>If you want the firewall rules to be reloaded at reboot, you will need to set up an
+init script.</p>
+
+<div class="highlight"><pre>sudo cp <span class="s2">"$(dirname $(dirname $(dirname $(gem which ript/dsl.rb))))"</span>/dist/init.d /etc/init.d/ript
+sudo update-rc.d ript defaults
+sudo mkdir /var/lib/ript
+sudo chown root.adm /var/lib/ript
+sudo chmod 770 /var/lib/ript
+</pre></div>
+
+<h2>Applying rules</h2>
+
+<ul>
+<li>Run <code>ript rules generate &lt;path&gt;</code> - will output all the generated rules by interpreting the file, or files in directory, <code>&lt;path&gt;</code>
+</li>
+<li>Run <code>ript rules diff &lt;path&gt;</code> - will output a diff of rules to apply based on what rules are currently loaded in memory</li>
+<li>Run <code>ript rules apply &lt;path&gt;</code> - will apply the aforementioned diff</li>
+<li>Run <code>ript rules diff &lt;path&gt;</code> - will display any rules not applied correctly</li>
+<li>Run <code>ript rules save</code> - will output the currently loaded rule in iptables-restore format</li>
+<li>Run <code>ript clean diff &lt;path&gt;</code> - will output iptables commands to delete unneeded rules</li>
+<li>Run <code>ript clean apply &lt;path&gt;</code> - will run the iptables commands to delete unneeded rules</li>
+</ul><p>There are tests for this workflow in <code>features/cli.feature</code></p>
+
+<p>Note: If you are using the supplied init script then you will need to add:</p>
+
+<div class="highlight"><pre>ript rules save &gt; /var/lib/ript/iptables.stat
+</pre></div>
+
+<p>to your workflow.</p>
+
+<h2>Developing</h2>
+
+<p>It is recommended to use a Ubuntu Lucid VM to develop Ript. If you develop on a machine without iptables some of the tests will fail.</p>
+
+<p>It is also recommended that you use <a href="http://rbenv.org/">rbenv</a>.</p>
+
+<div class="highlight"><pre>rbenv install 1.9.2-p290
+gem install bundler
+rbenv rehash
+</pre></div>
+
+<p>Then to setup a Ript development environment, run:</p>
+
+<div class="highlight"><pre>git clone git@github.com:bulletproofnetworks/ript.git
+<span class="nb">cd </span>ript
+bundle
+rbenv rehash
+</pre></div>
+
+<p>Then run the tests with:</p>
+
+<div class="highlight"><pre><span class="c"># Run all the tests</span>
+sudo bin/rbenv-sudo rake features
+<span class="c"># Run a specific test file</span>
+sudo bin/rbenv-sudo cucumber -r features/support/ -r features/step_definitions/ features/dsl/filter.feature
+<span class="c"># Run a specific test in a file</span>
+sudo bin/rbenv-sudo cucumber -r features/support/ -r features/step_definitions/ features/dsl/filter.feature:13
+</pre></div>
+
+<p>ript commands can be run like so:</p>
+
+<div class="highlight"><pre>sudo bin/rbenv-sudo bundle <span class="nb">exec </span>ript --help
+</pre></div>
+
+<h2>Releasing</h2>
+
+<ol>
+<li>Bump the version in <code>lib/ript/version.rb</code>
+</li>
+<li>Add an entry to <code>CHANGELOG.md</code>
+</li>
+<li>Run a <code>bundle</code> to update any RubyGems dependencies.</li>
+<li>
+<code>git commit</code> everything.</li>
+<li>git tag the version git tag X.Y.Z</li>
+<li>Build the gem with <code>rake build</code>
+</li>
+</ol><p>This will build a <code>.gem</code> and a <code>.deb</code> in <code>pkg/</code></p>
+
+<h2>Design</h2>
+
+<ul>
+<li>Applying firewall rules should cause zero downtime.</li>
+<li>Making a change to a partition's rules should only ever affect that partition.</li>
+<li>Each partition has their own set of chains where their rules live.</li>
+<li>Each chain is self contained, and there a pointers to that chain from a
+global chain where all partition pointers live.</li>
+<li>The pointer rules should be kept very simple, to reduce the chain traversal
+time for packets.</li>
+<li>Rolling forward is as simple as creating a new chain, and inserting pointers
+to the new chain in the global chain.</li>
+<li>Rolling back is as simple as deleting the pointers to the new chain from the
+global chain. The new chain could be retained, but we choose delete it.</li>
+<li>Decommissioning a partition should be as simple as removing the partition's
+rules file.</li>
+<li>Deleting the rules file will cause Ript to realise the partition's chains
+should be deleted.</li>
+</ul><h2>The DSL</h2>
+
+<p>The core of Ript is its easy to use DSL to describe iptables firewall rules.</p>
+
+<p>The DSL is flexible and handles both simple and complex use cases.</p>
+
+<h3>Introduction</h3>
+
+<p><img src="http://farm5.staticflickr.com/4116/4880818306_3bd230d0d4_z.jpg" alt="Book cover - http://www.flickr.com/photos/sterlic/4299631538/sizes/z/in/photostream/"></p>
+
+<p>Let's start from the beginning:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="c1"># Labels + rules go here</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>All labels + rules in Ript are wrapped in a <code>partition</code> block, which partitions
+partition rules so they can be changed on a per-partition basis. This is integral
+to how Ript does zero-downtime rule migrations.</p>
+
+<p>So, what are labels?</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"api.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.217"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.224/27"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Labels are identifiers for addresses or subnets that you want to write rules
+for.</p>
+
+<p>What are rules?</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"api.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.217"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.224/27"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Rules define how traffic flows from one place to another. Rules can either
+rewrite the source or destination of a packet (SNAT and DNAT), or permit/deny
+the flow of traffic:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"api.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.217"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.224/27"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"trusted office"</span><span class="p">,</span>     <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.20.4.124"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public ssh access"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">22</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+<span class="k">end</span>
+</pre></div>
+
+<p>In the above example, we are telling Ript we want SSH traffic to
+<code>www.joeblogsco.co</code> (<code>172.19.56.216</code>) which is on a public network to be sent
+to <code>app-01</code> (<code>192.168.5.230</code>), which is on a private network.</p>
+
+<p>Because the default policy is to drop packets that don't have an explicit
+match, we also need an <code>accept</code> rule so that the traffic being rewritten is also
+allowed to pass through.</p>
+
+<p>Ript knows this is generally what you want to do, so it actually creates this
+rule for you automatically. If we were to write it out, it would look something
+like this:</p>
+
+<div class="highlight"><pre><span class="n">rewrite</span> <span class="s2">"public ssh access"</span> <span class="k">do</span>
+  <span class="n">ports</span> <span class="mi">22</span>
+  <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+<span class="k">end</span>
+
+<span class="n">accept</span> <span class="s2">"allow public ssh access"</span> <span class="k">do</span>
+  <span class="n">protocols</span> <span class="s2">"tcp"</span>
+  <span class="n">ports</span>     <span class="mi">22</span>
+  <span class="n">to</span>        <span class="s2">"www.joeblogsco.com"</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Ript's DSL is actually pretty smart, so we can clean up the above example a
+bit:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"api.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.217"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.224/27"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"trusted office"</span><span class="p">,</span>     <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.20.4.124"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website + ssh access"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">22</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+<span class="k">end</span>
+</pre></div>
+
+<p>Here we have collapsed the two rewrite rules into one. Ript does the heavy
+lifting behind the scenes to generate the all the rules.</p>
+
+<p>If you want to be more specific about your rewrites (for example, you only want
+external SSH access from a specific jump host), it's really straight forward:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"api.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.217"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.224/27"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"trusted office"</span><span class="p">,</span>     <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.20.4.124"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">rewrite</span> <span class="s2">"trusted ssh access"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">22</span>
+    <span class="n">from</span> <span class="s2">"trusted office"</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p><a></a>
+You have a lot of flexibility when specifying ports, port ranges, and port mappings:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"api.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.217"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.224/27"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"app-02"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.231"</span>
+  <span class="n">label</span> <span class="s2">"trusted office"</span><span class="p">,</span>     <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.20.4.124"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public mail"</span> <span class="k">do</span>
+    <span class="c1"># Pass TCP port 25 + 993 through to app-01</span>
+    <span class="n">ports</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">993</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">rewrite</span> <span class="s2">"trusted private services"</span> <span class="k">do</span>
+    <span class="c1"># Pass TCP port 6000 to 8000 through to app-01 from the trusted office</span>
+    <span class="n">from</span> <span class="s2">"trusted office"</span>
+    <span class="n">ports</span> <span class="mi">6000</span><span class="o">.</span><span class="n">.</span><span class="mi">8000</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website"</span> <span class="k">do</span>
+    <span class="c1"># Map TCP port 80 traffic on the public IP to TCP port 8080 on app-01</span>
+    <span class="n">ports</span> <span class="mi">80</span> <span class="o">=&gt;</span> <span class="mi">8080</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">rewrite</span> <span class="s2">"api services"</span> <span class="k">do</span>
+    <span class="c1"># Pass TCP port 80 through to app-02</span>
+    <span class="c1"># Pass TCP port 8000 to 8900 through to app-02</span>
+    <span class="c1"># Map TCP port 2222 traffic on the public IP to TCP port 22 on app-02</span>
+    <span class="n">ports</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">8000</span><span class="o">.</span><span class="n">.</span><span class="mi">8900</span><span class="p">,</span> <span class="mi">2222</span> <span class="o">=&gt;</span> <span class="mi">22</span>
+    <span class="n">dnat</span>  <span class="s2">"api.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-02"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>The above <code>ports</code> syntax works throughout all rule types.</p>
+
+<p>Some notes on the DSL so far:</p>
+
+<ul>
+<li><p>A label's scope is restricted to the partition block it is defined in. This
+means you can use the same labels across different partitions and there won't
+be naming colissions.</p></li>
+<li>
+<p>The string argument passed to <code>rewrite</code>, <code>accept</code>, and other DSL rules is
+used purely for documentation (think comments). Other people maintaining your
+firewall rules will love you when you describe the intention of those rule in
+these comments.</p>
+
+<p>It's always best to write rules as if the person who ends up maintaining your
+rules is a violent psychopath who knows where you live.</p>
+</li>
+<li><p>Rules will default to the TCP protocol if you don't specify one. Valid
+protocols can be found in <code>/etc/protocols</code> on any Linux system. Ript accepts
+both the numeric and string identifiers (<code>udp</code> and <code>17</code> are both valid), but
+strongly recommends you use the string identifiers.</p></li>
+<li>
+<p>Given <code>accept</code> rules are created automatically when you define a rewrite, you
+may be wondering if <code>accept</code> rules are used at all?</p>
+
+<p><code>accept</code> is very useful on standalone firewalls, when opening up specific
+ports to the public internet.</p>
+
+<p>For firewall configurations that are doing lots of public-to-private address
+translation, you're going to use <code>accepts</code> very rarely.</p>
+</li>
+<li><p>Arguments to <code>ports</code> can be mixed (<code>ports 500..650, 80, 25, 9000..9500</code>),
+but you must always specify port mappings last, e.g. <code>ports 25, 80 =&gt; 8080</code>
+is valid, but <code>ports 80 =&gt; 8080, 25</code> is not.</p></li>
+</ul><h3>Rule types</h3>
+
+<p><img src="http://farm3.staticflickr.com/2730/4299631538_220c9c9448_z.jpg" alt="Ruler - http://www.flickr.com/photos/sterlic/4299631538/"></p>
+
+<p>The introduction examples cover the common use cases, but Ript has support for
+many other types of rules.</p>
+
+<p>For example, SNAT:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.224/27"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"private to public"</span> <span class="k">do</span>
+    <span class="n">snat</span> <span class="s2">"joeblogsco subnet"</span> <span class="o">=&gt;</span> <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>The above SNAT rule will rewrite all outgoing traffic from the
+<code>joeblogsco subnet</code> to appear as if it's originating from <code>www.joeblogsco.com</code>
+(<code>172.19.56.216</code>).</p>
+
+<p>If you need to explicitly drop traffic from somewhere, Ript makes this trivial:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"bad guy"</span><span class="p">,</span>            <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.110.247"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website + ssh access"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">22</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">drop</span> <span class="s2">"bad guy"</span> <span class="k">do</span>
+    <span class="n">from</span> <span class="s2">"bad guy"</span>
+    <span class="n">to</span>   <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>You can also broaden your drop to subnets, and restrict it down to a protocol:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"bad guys"</span><span class="p">,</span>           <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"10.0.0.0/8"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website + ssh access"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">22</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">drop</span> <span class="s2">"bad guys"</span> <span class="k">do</span>
+    <span class="n">protocols</span> <span class="s2">"udp"</span>
+    <span class="n">from</span>      <span class="s2">"bad guys"</span>
+    <span class="n">to</span>        <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Alternatively, you can also reject the traffic:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"bad guys"</span><span class="p">,</span>           <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"10.0.0.0/8"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website + ssh access"</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">22</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">reject</span> <span class="s2">"bad guys"</span> <span class="k">do</span>
+    <span class="n">protocols</span> <span class="s2">"udp"</span>
+    <span class="n">from</span>      <span class="s2">"bad guys"</span>
+    <span class="n">to</span>        <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<h3>Logging</h3>
+
+<p><img src="http://farm5.staticflickr.com/4020/4636162605_9ac8e91b56_z.jpg" alt="Logs - http://www.flickr.com/photos/crawshawt/4636162605/"></p>
+
+<p>Dropping and rejecting traffic is very useful, but if a tree falls in the
+forest and no-one is there to hear it...</p>
+
+<p>Ript makes flipping on logging extremely simple:</p>
+
+<div class="highlight"><pre><span class="c1"># partitions/joeblogsco.rb</span>
+<span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+  <span class="n">label</span> <span class="s2">"app-01"</span><span class="p">,</span>             <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.230"</span>
+  <span class="n">label</span> <span class="s2">"bad guys"</span><span class="p">,</span>           <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"10.0.0.0/8"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"public website + ssh access"</span><span class="p">,</span> <span class="ss">:log</span> <span class="o">=&gt;</span> <span class="kp">true</span> <span class="k">do</span>
+    <span class="n">ports</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">22</span>
+    <span class="n">dnat</span>  <span class="s2">"www.joeblogsco.com"</span> <span class="o">=&gt;</span> <span class="s2">"app-01"</span>
+  <span class="k">end</span>
+
+  <span class="n">reject</span> <span class="s2">"bad guys"</span><span class="p">,</span> <span class="ss">:log</span> <span class="o">=&gt;</span> <span class="kp">true</span> <span class="k">do</span>
+    <span class="n">protocols</span> <span class="s2">"udp"</span>
+    <span class="n">from</span>      <span class="s2">"bad guys"</span>
+    <span class="n">to</span>        <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>You can pass <code>:log =&gt; true</code> to any rule, and Ript will automatically generate
+logging statements.</p>
+
+<h3>Shortcuts</h3>
+
+<p><img src="http://farm3.staticflickr.com/2397/2215594186_c979f71689_z.jpg" alt="Shorthand http://www.flickr.com/photos/sizemore/2215594186/"></p>
+
+<p>Ript provides shortcuts for setting up common rules:</p>
+
+<div class="highlight"><pre><span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco uat subnet"</span><span class="p">,</span>   <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.0/24"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco stage subnet"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"10.60.2.0/24"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco prod subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"10.60.3.0/24"</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span>      <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"private to public"</span> <span class="k">do</span>
+    <span class="n">snat</span>  <span class="o">[</span> <span class="s2">"joeblogsco uat subnet"</span><span class="p">,</span>
+            <span class="s2">"joeblogsco stage subnet"</span><span class="p">,</span>
+            <span class="s2">"joeblogsco prod subnet"</span>  <span class="o">]</span> <span class="o">=&gt;</span> <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>Ript will expand the above to:</p>
+
+<div class="highlight"><pre><span class="n">partition</span> <span class="s2">"joeblogsco"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco uat subnet"</span><span class="p">,</span>   <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.5.0/24"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco stage subnet"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"10.60.2.0/24"</span>
+  <span class="n">label</span> <span class="s2">"joeblogsco prod subnet"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"10.60.3.0/24"</span>
+  <span class="n">label</span> <span class="s2">"www.joeblogsco.com"</span><span class="p">,</span>      <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"172.19.56.216"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"private to public"</span> <span class="k">do</span>
+    <span class="n">snat</span> <span class="s2">"joeblogsco uat subnet"</span> <span class="o">=&gt;</span> <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+
+  <span class="n">rewrite</span> <span class="s2">"private to public"</span> <span class="k">do</span>
+    <span class="n">snat</span> <span class="s2">"joeblogsco stage subnet"</span> <span class="o">=&gt;</span> <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+
+  <span class="n">rewrite</span> <span class="s2">"private to public"</span> <span class="k">do</span>
+    <span class="n">snat</span> <span class="s2">"joeblogsco prod subnet"</span> <span class="o">=&gt;</span> <span class="s2">"www.joeblogsco.com"</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>This also behaves exactly the same way with <code>accept</code>/<code>reject</code>/<code>drop</code> rules:</p>
+
+<div class="highlight"><pre><span class="n">partition</span> <span class="s2">"tootyfruity"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"apple"</span><span class="p">,</span>      <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.1"</span>
+  <span class="n">label</span> <span class="s2">"blueberry"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.2"</span>
+  <span class="n">label</span> <span class="s2">"cranberry"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.3"</span>
+  <span class="n">label</span> <span class="s2">"eggplant"</span><span class="p">,</span>   <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.4"</span>
+  <span class="n">label</span> <span class="s2">"fennel"</span><span class="p">,</span>     <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.5"</span>
+  <span class="n">label</span> <span class="s2">"grapefruit"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.6"</span>
+
+  <span class="n">accept</span> <span class="s2">"fruits of the forest"</span> <span class="k">do</span>
+    <span class="n">protocols</span> <span class="s2">"tcp"</span>
+    <span class="n">ports</span>     <span class="mi">22</span>
+    <span class="n">from</span>      <span class="sx">%w(apple blueberry cranberry eggplant fennel grapefruit)</span>
+    <span class="n">to</span>        <span class="sx">%w(apple blueberry cranberry eggplant fennel grapefruit)</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>In the above example, Ript will generate rules for all the different
+combinations of <code>from</code> + <code>to</code> hosts.</p>
+
+<p>You can also specify ranges of ports to generate rules for, and setup port
+mappings:</p>
+
+<div class="highlight"><pre><span class="n">partition</span> <span class="s2">"tootyfruity"</span> <span class="k">do</span>
+  <span class="n">label</span> <span class="s2">"apple"</span><span class="p">,</span>      <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.1"</span>
+  <span class="n">label</span> <span class="s2">"blueberry"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.2"</span>
+  <span class="n">label</span> <span class="s2">"cranberry"</span><span class="p">,</span>  <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.3"</span>
+  <span class="n">label</span> <span class="s2">"eggplant"</span><span class="p">,</span>   <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.4"</span>
+  <span class="n">label</span> <span class="s2">"fennel"</span><span class="p">,</span>     <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.5"</span>
+  <span class="n">label</span> <span class="s2">"grapefruit"</span><span class="p">,</span> <span class="ss">:address</span> <span class="o">=&gt;</span> <span class="s2">"192.168.0.6"</span>
+
+  <span class="n">rewrite</span> <span class="s2">"forward lots of ports, and don't make SSH public"</span> <span class="k">do</span>
+    <span class="n">protocols</span> <span class="s2">"tcp"</span>
+    <span class="n">ports</span>     <span class="mi">80</span><span class="p">,</span> <span class="mi">8600</span><span class="o">.</span><span class="n">.</span><span class="mi">8900</span><span class="p">,</span> <span class="mi">443</span> <span class="o">=&gt;</span> <span class="mi">4443</span><span class="p">,</span> <span class="mi">2222</span> <span class="o">=&gt;</span> <span class="mi">22</span>
+    <span class="n">from</span>      <span class="sx">%w(apple blueberry cranberry eggplant fennel grapefruit)</span>
+    <span class="n">to</span>        <span class="sx">%w(apple blueberry cranberry eggplant fennel grapefruit)</span>
+  <span class="k">end</span>
+<span class="k">end</span>
+</pre></div>
+
+<p>The above example will generate a <em>lot</em> of rules, but it illustrates the power
+of the DSL.</p>
+        </section>
+
+        <footer>
+          Ript is maintained by <a href="https://github.com/bulletproofnetworks">bulletproofnetworks</a><br>
+          This page was generated by <a href="http://pages.github.com">GitHub Pages</a>. Tactile theme by <a href="http://twitter.com/jasonlong">Jason Long</a>.
+        </footer>
+
+        
+      </div>
+    </div>
+  </body>
+</html>
