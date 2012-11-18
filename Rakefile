@@ -54,7 +54,7 @@ namespace :verify do
   task :changelog do
     changelog_filename = "CHANGELOG.md"
     version = Ript::VERSION
-    command = "grep '^# #{version}' #{changelog_filename}"
+    command = "grep '^# #{version}' #{changelog_filename} 2>&1 >/dev/null"
 
     if not system(command)
       puts "#{changelog_filename} doesn't have an entry for the version (#{version}) you are about to build.".red
