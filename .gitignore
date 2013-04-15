@@ -4,3 +4,4 @@ pkg/
 *~
 vendor
 .bundle
+.vagrant
