@@ -1,6 +1,9 @@
 ## Changelog
 
-# 0.8.4 - 2012/08/121
+# 0.8.5 - 2013/04/16
+ - Bug: Write the output of `ript diff` to a file and execute that, so sh doesn't choke on huge insertions #8
+
+# 0.8.4 - 2012/08/12
  - Bug: DNAT rules from one port to another were adding a filter rule for the
    source instead of destination port (@johnf)
 
