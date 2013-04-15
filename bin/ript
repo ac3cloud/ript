@@ -6,6 +6,7 @@ $: << Pathname.new(__FILE__).parent.parent.join('lib').expand_path.to_s
 $: << Pathname.new(__FILE__).parent.parent.expand_path.to_s
 $: << Dir.pwd
 require 'ript/dsl'
+require 'tempfile'
 
 if RUBY_VERSION =~ /^1.8/ then
   puts "Ript requires Ruby 1.9 to run. Exiting."
@@ -119,10 +120,10 @@ if ARGV[0] == 'rules'
   end
 
   if ARGV[1] == "apply" then
-    output = `#{$0} rules diff #{ARGV[2..-1].join(' ')} 2>&1`
+    output   = `#{$0} rules diff #{ARGV[2..-1].join(' ')} 2>&1`
+    tempfile = Tempfile.open("ript-apply-#{Time.now.to_i}") {|f| f << output}
     puts "#{output}"
-    system("bash -c '#{output}'")
-
+    system("sh -e #{tempfile.path}")
     exit
   end
 
@@ -172,7 +173,7 @@ if ARGV[0] == "clean" then
         chains.uniq.each do |chain|
           table = types[type]
 
-          clean_command = `iptables-save --table #{table} 2>&1 | grep -- '-A partition-#{type}' | grep -- '-j #{chain}'`.split("\n") 
+          clean_command = `iptables-save --table #{table} 2>&1 | grep -- '-A partition-#{type}' | grep -- '-j #{chain}'`.split("\n")
           clean_command.map! {|line| "iptables --table #{table} #{line}" }
           clean_command.map! {|line| line.gsub(" -A", " --delete") }
           clean_command.map! {|line| line.gsub(" -s", " --source") }
