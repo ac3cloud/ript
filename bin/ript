@@ -13,9 +13,11 @@ if RUBY_VERSION =~ /^1.8/ then
   exit
 end
 
-if Process.uid != 0 then
-  puts "You must run this as root!"
-  exit 1
+def root?
+  if Process.uid != 0 then
+    puts "You must run this as root!"
+    exit 1
+  end
 end
 
 if not ARGV[0]
@@ -105,6 +107,9 @@ if ARGV[0] == 'rules'
       end
     end
 
+    # everything below requires root
+    root?
+
     if ARGV[1] == "diff"
       @partitions.each do |partition|
         # We assume here that if a partition has a partition-a chain it will have all the others
@@ -136,6 +141,7 @@ if ARGV[0] == 'rules'
   exit! 1
 end
 
+root?
 if ARGV[0] == "clean" then
   if ARGV[1] == "diff" then
     path = Pathname.new(ARGV[2])
