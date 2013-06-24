@@ -18,6 +18,7 @@ Then /^the created chain name in all tables should match$/ do
     next if line.size == 0
     next if line =~ /--(new-chain|jump) partition-/
     next if line =~ /--(new-chain|jump) ript_bootstrap-/
+    next if line =~ /^\(in \/.*\)$/ # Exclude rake output from clean_slate
 
     line.should match(%r{(^\# #{@chain_name})|(#{@chain_names.join('|')})}) if line !~ /LOG/
   end
