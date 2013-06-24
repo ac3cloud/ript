@@ -1,5 +1,8 @@
 ## Changelog
 
+# 0.8.7 - 2013/06/23
+ - Bug: The I forgot to push to github release, just a version bump (@johnf)
+
 # 0.8.6 - 2013/06/23
  - Feature: Add `ript rules flush` command to flush all rules (@johnf)
 

@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    ript (0.8.6)
+    ript (0.8.7)
 
 GEM
   remote: http://rubygems.org/
