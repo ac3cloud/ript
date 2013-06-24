@@ -127,6 +127,36 @@ if ARGV[0] == 'rules'
     exit
   end
 
+  if ARGV[1] == 'flush' then
+    output = <<-EOF
+  iptables --flush --table filter
+  iptables --delete-chain --table filter
+  iptables --table filter --policy INPUT ACCEPT
+  iptables --table filter --policy FORWARD ACCEPT
+  iptables --table filter --policy OUTPUT ACCEPT
+
+  # Clean NAT
+  iptables --flush --table nat
+  iptables --delete-chain --table nat
+  iptables --table nat --policy PREROUTING ACCEPT
+  iptables --table nat --policy POSTROUTING ACCEPT
+  iptables --table nat --policy OUTPUT ACCEPT
+
+  # Clean mangle
+  iptables --flush --table mangle
+  iptables --delete-chain --table mangle
+  iptables --table mangle --policy PREROUTING ACCEPT
+  iptables --table mangle --policy POSTROUTING ACCEPT
+  iptables --table mangle --policy INPUT ACCEPT
+  iptables --table mangle --policy FORWARD ACCEPT
+  iptables --table mangle --policy OUTPUT ACCEPT
+    EOF
+    tempfile = Tempfile.open("ript-apply-#{Time.now.to_i}") {|f| f << output}
+    puts "#{output}"
+    system("sh -e #{tempfile.path}")
+    exit
+  end
+
   if ARGV[1] == 'save' then
     system('/sbin/iptables-save')
     exit

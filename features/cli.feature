@@ -113,3 +113,32 @@ Feature: Ript cli utility
       :OUTPUT ACCEPT \[\d+:\d+\]
       COMMIT
       """
+
+  @sudo @timeout-10
+  Scenario: Flush rules
+    Given I have no iptables rules loaded
+    When I run `ript rules flush`
+    Then the output from "ript rules flush" should match:
+      """
+        iptables --flush --table filter
+        iptables --delete-chain --table filter
+        iptables --table filter --policy INPUT ACCEPT
+        iptables --table filter --policy FORWARD ACCEPT
+        iptables --table filter --policy OUTPUT ACCEPT
+
+        # Clean NAT
+        iptables --flush --table nat
+        iptables --delete-chain --table nat
+        iptables --table nat --policy PREROUTING ACCEPT
+        iptables --table nat --policy POSTROUTING ACCEPT
+        iptables --table nat --policy OUTPUT ACCEPT
+
+        # Clean mangle
+        iptables --flush --table mangle
+        iptables --delete-chain --table mangle
+        iptables --table mangle --policy PREROUTING ACCEPT
+        iptables --table mangle --policy POSTROUTING ACCEPT
+        iptables --table mangle --policy INPUT ACCEPT
+        iptables --table mangle --policy FORWARD ACCEPT
+        iptables --table mangle --policy OUTPUT ACCEPT
+      """
