@@ -539,26 +539,6 @@ end
 In the above example, Ript will generate rules for all the different
 combinations of `from` + `to` hosts.
 
-You can also specify ranges of ports to generate rules for, and setup port
-mappings:
-
-``` ruby
-partition "tootyfruity" do
-  label "apple",      :address => "192.168.0.1"
-  label "blueberry",  :address => "192.168.0.2"
-  label "cranberry",  :address => "192.168.0.3"
-  label "eggplant",   :address => "192.168.0.4"
-  label "fennel",     :address => "192.168.0.5"
-  label "grapefruit", :address => "192.168.0.6"
-
-  rewrite "forward lots of ports, and don't make SSH public" do
-    protocols "tcp"
-    ports     80, 8600..8900, 443 => 4443, 2222 => 22
-    from      %w(apple blueberry cranberry eggplant fennel grapefruit)
-    to        %w(apple blueberry cranberry eggplant fennel grapefruit)
-  end
-end
-```
-
 The above example will generate a *lot* of rules, but it illustrates the power
 of the DSL.
+
