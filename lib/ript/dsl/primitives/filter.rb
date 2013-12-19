@@ -77,8 +77,10 @@ module Ript
 
               from_address  = @labels[from][:address]
               to_address    = @labels[to][:address]
+              family        = @labels[to][:family]
 
               attributes = {
+                             "family"      => family,
                              "table"       => "filter",
                              "insert"      => insert,
                              "destination" => to_address,
@@ -88,6 +90,7 @@ module Ript
               @input << Rule.new(attributes.merge("jump" => "LOG")) if log
 
               attributes = {
+                             "family"      => family,
                              "table"       => "filter",
                              "append"      => "#{@name}-a",
                              "destination" => to_address,

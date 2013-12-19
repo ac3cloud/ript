@@ -6,6 +6,15 @@ module Ript
       module Common
         def label(label, opts={})
           @labels[label] = opts
+          if opts[:address] =~ /^[0-9.]+$/
+            @labels[label][:family] = :ipv4
+          elsif opts[:address] =~ /^[0-9a-fA-F:]+$/
+            @labels[label][:family] = :ipv6
+          else
+            # TODO Should we default to IPv4 or should we force a protocol to be specified?
+            # For when a hostname is passed?
+            @labels[label][:family] ||= :ipv4
+          end
         end
 
         def interface(arg)
@@ -62,10 +71,17 @@ module Ript
         end
 
         def validate(opts={})
+          families = []
+
           opts.each_pair do |type, label|
             if not label_exists?(label)
               raise LabelError, "Address '#{label}' (a #{type}) isn't defined"
             end
+            families << @labels[label][:family]
+          end
+
+          if families.uniq.size != 1
+            raise FamilyMixError, "Cannot mix IPv4 and IPv6 addresses in a rule: #{opts.map {|a| @labels[a]}}"
           end
         end
 

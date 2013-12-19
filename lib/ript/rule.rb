@@ -10,7 +10,8 @@ module Ript
       @comment = opts.delete(:comment)
       @raw     = opts.delete(:raw)
       @args    = []
-      @opts    = opts
+      @opts    = opts.clone
+      @family  = @opts.delete "family"
     end
 
     def [](key)
@@ -46,7 +47,14 @@ module Ript
       if raw?
         @raw
       else
-        "iptables #{@args.join(' ')}"
+        if @family == :ipv4
+          "iptables #{@args.join(' ')}"
+        elsif @family == :ipv6
+          "iptables6 #{@args.join(' ')}"
+        else
+          # TODO, Could we easily support ebtables?
+          raise FamilyError, "Unsupported family #{@family}"
+        end
       end
     end
 

@@ -28,9 +28,11 @@ module Ript
 
       # Even when suplying our own rules we need the placeholders below to know if anything changed
       @setup = []
-      @setup << Rule.new("table" => "nat",    "new-chain" => "#{@name}-d")
-      @setup << Rule.new("table" => "nat",    "new-chain" => "#{@name}-s")
-      @setup << Rule.new("table" => "filter", "new-chain" => "#{@name}-a")
+      [:ipv4, :ipv6].each do |family|
+        @setup << Rule.new("table" => "nat",    "new-chain" => "#{@name}-d", "family" => family)
+        @setup << Rule.new("table" => "nat",    "new-chain" => "#{@name}-s", "family" => family)
+        @setup << Rule.new("table" => "filter", "new-chain" => "#{@name}-a", "family" => family)
+      end
 
       # Provide a label for the zero-address
       label "all", :address => "0.0.0.0/0"
