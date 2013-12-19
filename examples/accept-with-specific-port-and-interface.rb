@@ -10,5 +10,14 @@ partition "keepalived" do
     from      "foobar-lvs-04", "util-01", "util-02"
     to        "foobar-lvs-04"
   end
-end
 
+  label "foobar-lvs-04 ipv6", :address => "2001:db8::03"
+
+  accept "ssh access between lvs/firewalls ipv6" do
+    interface "vlan+"
+    protocols "tcp"
+    ports     22
+    from      "foobar-lvs-04 ipv6"
+    to        "foobar-lvs-04 ipv6"
+  end
+end

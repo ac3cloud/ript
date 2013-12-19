@@ -37,15 +37,21 @@ Feature: Ript DSL
       iptables --table nat --new-chain keepalived-d\w+
       iptables --table nat --new-chain keepalived-s\w+
       iptables --table filter --new-chain keepalived-a\w+
+      iptables6 --table nat --new-chain keepalived-d\w+
+      iptables6 --table nat --new-chain keepalived-s\w+
+      iptables6 --table filter --new-chain keepalived-a\w+
       """
     Then the output should match:
       """
       iptables --table filter --insert partition-a --destination 224.0.0.0/8 --jump keepalived-a\w+
+      iptables6 --table filter --insert partition-a --destination FF02:0:0:0:0:0:0:12 --jump keepalived-a\w+
       """
     Then the output should match:
       """
       iptables --table filter --append keepalived-a\w+ --protocol vrrp --destination 224.0.0.0/8 --source 172.16.0.216 --jump ACCEPT
       iptables --table filter --append keepalived-a\w+ --protocol vrrp --destination 224.0.0.0/8 --source 172.16.0.217 --jump ACCEPT
+      iptables6 --table filter --append keepalived-a\w+ --protocol vrrp --destination FF02:0:0:0:0:0:0:12 --source 2001:db8::01 --jump ACCEPT
+      iptables6 --table filter --append keepalived-a\w+ --protocol vrrp --destination FF02:0:0:0:0:0:0:12 --source 2001:db8::02 --jump ACCEPT
       """
     Then the created chain name in all tables should match
 
@@ -57,14 +63,22 @@ Feature: Ript DSL
       iptables --table nat --new-chain keepalived-d\w+
       iptables --table nat --new-chain keepalived-s\w+
       iptables --table filter --new-chain keepalived-a\w+
+      iptables6 --table nat --new-chain keepalived-d\w+
+      iptables6 --table nat --new-chain keepalived-s\w+
+      iptables6 --table filter --new-chain keepalived-a\w+
       """
     Then the output should match:
       """
       iptables --table filter --insert partition-a --destination 192.168.0.76 --jump keepalived-a\w+
+      iptables6 --table filter --insert partition-a --destination 2001:db8::03 --jump keepalived-a\w+
       """
     Then the output should match:
       """
       iptables --table filter --append keepalived-a\w+ --in-interface vlan\+ --protocol tcp --dport 22 --destination 192.168.0.76 --source 192.168.0.76 --jump ACCEPT
+      """
+    Then the output should match:
+      """
+      iptables6 --table filter --append keepalived-a\w+ --in-interface vlan\+ --protocol tcp --dport 22 --destination 2001:db8::03 --source 2001:db8::03 --jump ACCEPT
       """
     Then the created chain name in all tables should match
 
