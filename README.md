@@ -80,8 +80,15 @@ sudo bin/rbenv-sudo cucumber -r features/support/ -r features/step_definitions/ 
 
 ript commands can be run like so:
 
-```` bash
+``` bash
 sudo bin/rbenv-sudo bundle exec ript --help
+```
+
+Outside of this environment, rules can be generated (for debugging purposes) by forcing the inclusion or the exclusion of the bootstrap rules. These can be run as a non-root user.
+
+```bash
+bundle exec ript rules generate examples/basic.rb --force-bootstrap    # Includes the ript/bootstrap rules, or...
+bundle exec ript rules generate examples/basic.rb --force-no-bootstrap # Exclude the ript/bootstrap rules
 ```
 
 Releasing

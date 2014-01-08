@@ -7,20 +7,43 @@ $: << Pathname.new(__FILE__).parent.parent.expand_path.to_s
 $: << Dir.pwd
 require 'ript/dsl'
 require 'tempfile'
+require 'optparse'
 
 if RUBY_VERSION =~ /^1.8/ then
   puts "Ript requires Ruby 1.9 to run. Exiting."
   exit
 end
 
-if Process.uid != 0 then
-  puts "You must run this as root!"
-  exit 1
-end
-
 if not ARGV[0]
   puts "Usage: #{$0} <rulefile|directory>"
   exit! 1
+end
+
+def require_root!
+  if Process.uid != 0 then
+    puts "You must run this as root!"
+    exit 1
+  end
+end
+
+def bootstrap_strategy(argv=ARGV)
+  strategy = :detect
+  parser = OptionParser.new do |opts|
+    opts.on('--force-bootstrap', 'Force inclusion of the ript/bootstrap rules') do |f|
+      strategy = :force_include
+    end
+    opts.on('--force-no-bootstrap', 'Force exclusion of the ript/bootstrap rules') do |f|
+      strategy = :force_exclude
+    end
+  end
+  parser.parse!(argv)
+  strategy
+end
+
+def include_bootstrap
+  require 'ript/bootstrap'
+  puts "# bootstrap"
+  puts Ript::Bootstrap.partition.to_iptables
 end
 
 def types
@@ -92,10 +115,14 @@ if ARGV[0] == 'rules'
       exit 160
     end
 
-    if `iptables --list partition-a --numeric 2>&1 | grep Chain` !~ /^Chain/
-      require 'ript/bootstrap'
-      puts "# bootstrap"
-      puts Ript::Bootstrap.partition.to_iptables
+    case bootstrap_strategy
+    when :force_include
+      include_bootstrap
+    when :detect
+      require_root!
+      if `iptables --list partition-a --numeric 2>&1 | grep Chain` !~ /^Chain/
+        include_bootstrap
+      end
     end
 
     if ARGV[1] == "generate"
@@ -106,6 +133,7 @@ if ARGV[0] == 'rules'
     end
 
     if ARGV[1] == "diff"
+      require_root!
       @partitions.each do |partition|
         # We assume here that if a partition has a partition-a chain it will have all the others
         chain_name = "#{partition.name}-#{partition.id.split('-').first}".sub(/-/, '-a')
@@ -120,6 +148,7 @@ if ARGV[0] == 'rules'
   end
 
   if ARGV[1] == "apply" then
+    require_root!
     output   = `#{$0} rules diff #{ARGV[2..-1].join(' ')} 2>&1`
     tempfile = Tempfile.open("ript-apply-#{Time.now.to_i}") {|f| f << output}
     puts "#{output}"
@@ -128,6 +157,7 @@ if ARGV[0] == 'rules'
   end
 
   if ARGV[1] == 'flush' then
+    require_root!
     output = <<-EOF
   iptables --flush --table filter
   iptables --delete-chain --table filter
@@ -158,6 +188,7 @@ if ARGV[0] == 'rules'
   end
 
   if ARGV[1] == 'save' then
+    require_root!
     system('/sbin/iptables-save')
     exit
   end
@@ -167,6 +198,7 @@ if ARGV[0] == 'rules'
 end
 
 if ARGV[0] == "clean" then
+  require_root!
   if ARGV[1] == "diff" then
     path = Pathname.new(ARGV[2])
 

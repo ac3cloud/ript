@@ -142,3 +142,32 @@ Feature: Ript cli utility
         iptables --table mangle --policy FORWARD ACCEPT
         iptables --table mangle --policy OUTPUT ACCEPT
       """
+
+  @sudo @timeout-10
+  Scenario: Bootstrap forced inclusion, exclusion, detection
+    Given I have no iptables rules loaded
+    When I run `ript rules generate examples/basic.rb --force-bootstrap`
+    Then the output from "ript rules generate examples/basic.rb --force-bootstrap" should match:
+      """
+      # bootstrap
+      iptables --table nat --new-chain ript_bootstrap-.*
+      """
+    And the output from "ript rules generate examples/basic.rb --force-bootstrap" should match:
+      """
+      iptables --table nat --new-chain basic-d\w+
+      iptables --table nat --new-chain basic-s\w+
+      iptables --table filter --new-chain basic-a\w+
+      """
+
+    When I run `ript rules generate examples/basic.rb --force-no-bootstrap`
+    Then the output from "ript rules generate examples/basic.rb --force-no-bootstrap" should not match:
+      """
+      # bootstrap
+      iptables --table nat --new-chain ript_bootstrap-.*
+      """
+    And the output from "ript rules generate examples/basic.rb --force-no-bootstrap" should match:
+      """
+      iptables --table nat --new-chain basic-d\w+
+      iptables --table nat --new-chain basic-s\w+
+      iptables --table filter --new-chain basic-a\w+
+      """

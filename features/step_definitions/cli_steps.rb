@@ -6,6 +6,10 @@ Then /^the output from "([^"]*)" should match:$/ do |cmd, partial_output|
   output_from(cmd).should =~ /#{partial_output}/
 end
 
+Then /^the output from "([^"]*)" should not match:$/ do |cmd, partial_output|
+  output_from(cmd).should_not =~ /#{partial_output}/
+end
+
 Then /^the output from "([^"]*)" should contain exactly:$/ do |cmd, exact_output|
   output_from(cmd).should == exact_output
 end
