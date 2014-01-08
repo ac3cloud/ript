@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 $: << Pathname.new(__FILE__).dirname.parent.expand_path.to_s
 
 require 'digest/md5'
