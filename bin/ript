@@ -5,13 +5,8 @@ $: << Pathname.new(__FILE__).parent.parent.join('lib').expand_path.to_s
 # so rules/ can be loaded
 $: << Pathname.new(__FILE__).parent.parent.expand_path.to_s
 $: << Dir.pwd
-require 'ript/dsl'
+require 'ript/dsl' # forces Ruby > 1.8
 require 'tempfile'
-
-if RUBY_VERSION =~ /^1.8/ then
-  puts "Ript requires Ruby 1.9 to run. Exiting."
-  exit
-end
 
 if Process.uid != 0 then
   puts "You must run this as root!"
