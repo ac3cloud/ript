@@ -48,12 +48,12 @@ to your workflow.
 Developing
 ----------
 
-It is recommended to use a Ubuntu Lucid VM to develop Ript. If you develop on a machine without iptables some of the tests will fail.
+It is recommended that you use a Ubuntu 12.04LTS VM to develop Ript. If you develop on a machine without iptables some of the tests will fail.
 
 It is also recommended that you use [rbenv](http://rbenv.org/).
 
 ``` bash
-rbenv install 1.9.2-p290
+rbenv install 1.9.3-p484
 gem install bundler
 rbenv rehash
 ```

@@ -1,5 +1,3 @@
-#!/usr/bin/env ruby
-
 class Hash
   def insert_before(key, opts={})
     before = self.dup.take_while {|k, v| k != key }
