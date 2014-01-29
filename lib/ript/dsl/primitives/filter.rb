@@ -54,6 +54,7 @@ module Ript
           @tos       = []
           @ports     = []
           @protocols = []
+          @interface = nil
           insert     = opts[:insert] || "partition-a"
           jump       = opts[:jump]   || "DROP"
           log        = opts[:log]
