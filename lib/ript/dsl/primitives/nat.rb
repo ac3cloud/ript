@@ -57,7 +57,7 @@ module Ript
                             "jump"        => "ACCEPT" }
 
             @froms.map {|from| @labels[from][:address]}.each do |address|
-              attributes.insert_before("destination", "source" => address)
+              attributes.insert_before("destination", [ "source", address ])
             end
 
             @table << Rule.new(attributes.merge("jump" => "LOG")) if log
@@ -113,7 +113,7 @@ module Ript
                                       "dport"       => destination_port,
                                       "jump"        => "ACCEPT" }
 
-                      attributes.insert_before("destination", "source" => from_address) unless from_address == "0.0.0.0/0"
+                      attributes.insert_before("destination", [ "source", from_address ]) unless from_address == "0.0.0.0/0"
 
                       @table << Rule.new(attributes.merge("jump" => "LOG")) if log
                       @table << Rule.new(attributes)
@@ -136,7 +136,7 @@ module Ript
                                     "dport"       => port,
                                     "jump"        => "ACCEPT" }
 
-                    attributes.insert_before("destination", "source" => from_address) unless from_address == "0.0.0.0/0"
+                    attributes.insert_before("destination", [ "source" , from_address ]) unless from_address == "0.0.0.0/0"
 
                     @table << Rule.new(attributes.merge("jump" => "LOG")) if log
                     @table << Rule.new(attributes)

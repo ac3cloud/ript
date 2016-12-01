@@ -1,10 +1,10 @@
 PATH
   remote: .
   specs:
-    ript (0.8.5)
+    ript (0.8.8)
 
 GEM
-  remote: https://rubygems.org/
+  remote: http://rubygems.org/
   specs:
     arr-pm (0.0.7)
       cabin (> 0)
@@ -59,3 +59,6 @@ DEPENDENCIES
   rake
   ript!
   rspec
+
+BUNDLED WITH
+   1.13.6
