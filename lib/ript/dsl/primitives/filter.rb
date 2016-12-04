@@ -119,7 +119,7 @@ module Ript
               end
 
               # If we have arguments, iterate through them
-              if arguments.size > 0 
+              if arguments.size > 0
                 arguments.each do |options|
                     options.each_pair do |key, value|
                       supported_protocols = IO.readlines("/etc/protocols")

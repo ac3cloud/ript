@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.name        = "ript"
   s.version     = Ript::VERSION
   s.platform    = Gem::Platform::RUBY
-  s.authors     = [ "Bulletproof Networks" ]
+  s.authors     = [ "Bulletproof Group Ltd" ]
   s.email       = [ "foundation@bulletproof.net" ]
   s.homepage    = "http://bulletproof.net/"
   s.summary     = %q{DSL for iptables, and tool for incrementally applying firewall rules}

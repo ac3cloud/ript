@@ -4,7 +4,7 @@ PATH
     ript (0.8.8)
 
 GEM
-  remote: http://rubygems.org/
+  remote: https://rubygems.org/
   specs:
     arr-pm (0.0.7)
       cabin (> 0)

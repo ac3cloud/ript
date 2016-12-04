@@ -9,7 +9,7 @@ Arthur Barton (@arthurbarton)
 John Ferlito (@johnf)
 Jesse Reynolds (@jessereynolds)
 Michael Baker (@elmobp)
-Greg Cockburn (gergnz)
+Greg Cockburn (@gergnz)
 
 Inspiration given by:
 

@@ -3,7 +3,7 @@
 # 0.8.8 - 2016/12/02
  - Bug: Support for an array of protocols (@elmobp)
  - Bug: Support Ruby 2.0+ (@elmobp)
- - Feature: Protocol validation using /etc/protocols, by adding this support in the validation ensures many ohter parts of the software performed correctly (@elmobp)
+ - Feature: Protocol validation using /etc/protocols, by adding this support in the validation ensures many other parts of the software performed correctly (@elmobp)
  - Feature: Protocol validation whitelist (@elmobp)
 
 # 0.8.7 - 2013/06/23
