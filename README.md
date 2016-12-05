@@ -9,7 +9,7 @@ Ript works with `iptables` on Linux, and is written in Ruby.
 Installing
 ----------
 
-Make sure you have Ruby 1.9.2 installed, and run:
+Make sure you have Ruby 1.9+ installed, and run:
 
 ``` bash
 gem install ript
@@ -48,12 +48,12 @@ to your workflow.
 Developing
 ----------
 
-It is recommended that you use a Ubuntu 12.04LTS VM to develop Ript. If you develop on a machine without iptables some of the tests will fail.
+It is recommended to use a Ubuntu Xenial VM to develop Ript. If you develop on a machine without iptables some of the tests will fail.
 
 It is also recommended that you use [rbenv](http://rbenv.org/).
 
 ``` bash
-rbenv install 1.9.3-p484
+rbenv install 2.3.0
 gem install bundler
 rbenv rehash
 ```
@@ -539,6 +539,26 @@ end
 In the above example, Ript will generate rules for all the different
 combinations of `from` + `to` hosts.
 
+You can also specify ranges of ports to generate rules for, and setup port
+mappings:
+
+``` ruby
+partition "tootyfruity" do
+  label "apple",      :address => "192.168.0.1"
+  label "blueberry",  :address => "192.168.0.2"
+  label "cranberry",  :address => "192.168.0.3"
+  label "eggplant",   :address => "192.168.0.4"
+  label "fennel",     :address => "192.168.0.5"
+  label "grapefruit", :address => "192.168.0.6"
+
+  rewrite "forward lots of ports, and don't make SSH public" do
+    protocols "tcp"
+    ports     80, 8600..8900, 443 => 4443, 2222 => 22
+    from      %w(apple blueberry cranberry eggplant fennel grapefruit)
+    to        %w(apple blueberry cranberry eggplant fennel grapefruit)
+  end
+end
+```
+
 The above example will generate a *lot* of rules, but it illustrates the power
 of the DSL.
-

@@ -1,5 +1,17 @@
 ## Changelog
 
+# 0.8.8 - 2016/12/02
+ - Bug: Support for an array of protocols (@elmobp)
+ - Bug: Support Ruby 2.0+ (@elmobp)
+ - Feature: Protocol validation using /etc/protocols, by adding this support in the validation ensures many other parts of the software performed correctly (@elmobp)
+ - Feature: Protocol validation whitelist (@elmobp)
+
+# 0.8.7 - 2013/06/23
+ - Bug: The I forgot to push to github release, just a version bump (@johnf)
+
+# 0.8.6 - 2013/06/23
+ - Feature: Add `ript rules flush` command to flush all rules (@johnf)
+
 # 0.8.5 - 2013/04/16
  - Bug: Write the output of `ript diff` to a file and execute that, so sh doesn't choke on huge insertions #8
 

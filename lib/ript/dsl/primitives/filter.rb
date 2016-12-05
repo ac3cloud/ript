@@ -54,7 +54,6 @@ module Ript
           @tos       = []
           @ports     = []
           @protocols = []
-          @interface = nil
           insert     = opts[:insert] || "partition-a"
           jump       = opts[:jump]   || "DROP"
           log        = opts[:log]
@@ -95,8 +94,7 @@ module Ript
                              "source"      => from_address,
                              "jump"        => jump
                            }
-              attributes.insert_before("destination", "in-interface" => @interface) if @interface
-
+              attributes.insert_before("destination", [ "in-interface", @interface ]) if @interface
               # Build up a list of arguments we need to build expanded rules.
               #
               # This allows us to expand shorthand definitions like:
@@ -123,24 +121,42 @@ module Ript
               # If we have arguments, iterate through them
               if arguments.size > 0
                 arguments.each do |options|
-                  options.each_pair do |key, value|
-                    attributes = attributes.dup # avoid overwriting existing hash values from previous iterations
-                    attributes.insert_before("destination", key => value)
-                  end
-
-                  @table << Rule.new(attributes.merge("jump" => "LOG")) if log
+                    options.each_pair do |key, value|
+                      supported_protocols = IO.readlines("/etc/protocols")
+                      ignored_values = %w(all tcp udp)
+                      supported_protocols.map! {|proto| proto.split("\t")[0] }
+                      if key == "protocol" and value.instance_of?(String) and !ignored_values.include? value.downcase and value != "" and !supported_protocols.include? value
+                              puts "Invalid protocol a) #{value} specified cannot continue"
+                              exit
+                      end 
+                      if value.is_a? Array
+                        value.each do |valueout|
+                          if !ignored_values.include? valueout.downcase and !supported_protocols.include? valueout
+                            puts "Invalid protocol b) #{valueout} specified cannot continue"
+                            exit 100 
+                          end 
+                          attributes = attributes.dup # avoid overwriting existing hash values from previous iterations
+                          attributes.insert_before("destination", [ key,  valueout ])
+                          @table << Rule.new(attributes.merge("jump" => "LOG")) if log 
+                          @table << Rule.new(attributes)
+                        end 
+                        return
+                      else
+                      attributes = attributes.dup # avoid overwriting existing hash values from previous iterations
+                      attributes.insert_before("destination", [ key,  value ])
+                    end 
+                  end 
+                  @table << Rule.new(attributes.merge("jump" => "LOG")) if log 
                   @table << Rule.new(attributes)
-                end
+                end 
               else
-                @table << Rule.new(attributes.merge("jump" => "LOG")) if log
+                @table << Rule.new(attributes.merge("jump" => "LOG")) if log 
                 @table << Rule.new(attributes)
               end # if
             end # @tos.each
           end # @froms.each
-
         end # def build_rule
       end
     end
   end
 end
-
