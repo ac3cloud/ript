@@ -24,6 +24,8 @@ sudo update-rc.d ript defaults
 sudo mkdir /var/lib/ript
 sudo chown root.adm /var/lib/ript
 sudo chmod 770 /var/lib/ript
+# Only If you are using Xenial
+sudo cp "$(dirname $(dirname $(dirname $(gem which ript/dsl.rb))))"/dist/ript.conf /etc/systemd/system/
 ```
 
 Applying rules
