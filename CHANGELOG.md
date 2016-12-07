@@ -1,5 +1,8 @@
 ## Changelog
 
+# 0.8.9 - 2016/12/08
+ - Feature: Add Upstart for Xenial
+
 # 0.8.8 - 2016/12/02
  - Bug: Support for an array of protocols (@elmobp)
  - Bug: Support Ruby 2.0+ (@elmobp)
