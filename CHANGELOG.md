@@ -1,5 +1,7 @@
 ## Changelog
 
+# 0.9.0 - 2017/06/21
+ - Bug: Ports could be specified as text and not fail
 # 0.8.9 - 2016/12/08
  - Feature: Add Systemd for Xenial
 

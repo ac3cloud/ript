@@ -18,10 +18,16 @@ module Ript
               if port.class == Range
                 @ports << "#{port.begin}:#{port.end}"
               else
+                if not port.is_a? Numeric
+                  raise PortError, "Port #{port} is not numeric cannot continue"
+                end
                 @ports << port
               end
             end
           else
+            if not args.is_a? Numeric
+              raise PortError, "Port #{args} is not numeric cannot continue"
+            end
             port = args
             @ports << port
           end
