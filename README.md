@@ -81,8 +81,7 @@ sudo bin/rbenv-sudo cucumber -r features/support/ -r features/step_definitions/ 
 ```
 
 ript commands can be run like so:
-
-```` bash
+``` bash
 sudo bin/rbenv-sudo bundle exec ript --help
 ```
 
